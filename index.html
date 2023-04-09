@@ -1,0 +1,73 @@
+<html>
+  <head>
+    <title>game2</title>
+    <script src="matter.js" type="text/javascript"></script>
+    <script src="gamejs-2.0.1.js"></script>
+    <style>
+      #victory {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: none;
+      }
+      #timer {
+        position: absolute;
+        top: 500px;
+        left: 300px;
+        font-size: 24px;
+        color:aliceblue;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="matterCanvas"></canvas>
+    <img id="victory" src="victory.png" alt="You won!">
+    <div id="timer">0.00</div>
+    <script>
+      let engine = Matter.Engine.create();
+      let render = Matter.Render.create({
+        canvas: document.getElementById("matterCanvas"),
+        engine: engine,
+        options: {
+          height: 1680,
+          width: 6000,
+          wireframes: false
+        }
+      });
+      let ground = Matter.Bodies.rectangle(1200, 500, 300, 20, { isStatic: true });
+      let ball = Matter.Bodies.circle(600, 300, 20);
+      let stack = Matter.Composites.stack(1100,300,4,4,0,0, function(x,y){
+        return Matter.Bodies.polygon(x,y,8,30)
+      });
+      let sling = Matter.Constraint.create({
+        pointA: { x: 600, y: 300 },
+        bodyB: ball,
+        stiffness: 0.05
+      });
+      let firing = false;
+      let mouseConstraint = Matter.MouseConstraint.create(engine, {
+        mouse: Matter.Mouse.create(render.canvas)
+      });
+      let elapsedTime = 0;
+      let startTime = Date.now();
+      let timerElement = document.getElementById("timer");
+      Matter.Events.on(mouseConstraint, "enddrag", function (e) {
+        if (e.body === ball) firing = true;
+      });
+      Matter.Events.on(engine, 'afterUpdate', function() {
+        if (firing && Math.abs(ball.position.x-300) >1 && Math.abs(ball.position.y-600) >2) {
+            ball = Matter.Bodies.circle(300,600,20);
+            Matter.World.add(engine.world, [ball]);
+            sling.bodyB = ball;
+            firing = false;
+        }
+        elapsedTime = (Date.now() - startTime) / 1000;
+        timerElement.innerText = elapsedTime.toFixed(2);
+      });
+      Matter.World.add(engine.world, [ground, ball,stack, sling, mouseConstraint]);
+      Matter.Engine.run(engine);
+      Matter.Render.run(render);
+    </script>
+  </body>
+</html>
